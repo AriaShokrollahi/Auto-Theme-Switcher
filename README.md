@@ -1,0 +1,308 @@
+# Auto Theme Switcher | تغییر خودکار تم ویندوز
+
+[فارسی](#fa) | [English](#en)
+
+<a name="fa"></a>
+
+Auto Theme Switcher یک برنامه کوچک و سبک برای ویندوز است که تم سیستم را در ساعت‌هایی که خودتان تعیین می‌کنید به‌صورت خودکار بین حالت **روشن (Light)** و **تاریک (Dark)** تغییر می‌دهد. برنامه در نوار کنار ساعت (System Tray) اجرا می‌شود، همراه ویندوز بالا می‌آید و بقیه وقت مزاحم کار شما نیست.
+
+## 📌 معرفی پروژه
+
+ویندوز به‌صورت پیش‌فرض امکان زمان‌بندی تم روشن و تاریک را ندارد، و بسیاری از برنامه‌هایی که این کار را انجام می‌دهند بزرگ‌تر از نیاز یک کاربر عادی هستند یا امکاناتی دارند که لازم نیست.
+
+Auto Theme Switcher با یک ایده ساده ساخته شده است: دو ساعت انتخاب می‌کنید، ذخیره می‌کنید و بعد از آن دیگر نیازی نیست به چیزی دست بزنید. عصر ویندوز خودش تاریک می‌شود و صبح خودش روشن.
+
+## ✨ امکانات
+
+- 🌗 تغییر خودکار تم ویندوز و برنامه‌ها بین حالت روشن و تاریک بر اساس ساعت
+- 🌙 پشتیبانی از بازه‌هایی که از نیمه‌شب رد می‌شوند (مثلاً روشن از ۲۲:۰۰ تا ۰۶:۰۰)
+- 🚀 اجرای خودکار همراه با ویندوز
+- 🔄 اعمال تم درست هنگام روشن شدن سیستم، حتی اگر ساعت تغییر را از دست داده باشید
+- ✋ احترام به تغییر دستی: اگر خودتان تم را عوض کنید، تا ساعت بعدی دست نمی‌زند
+- 🧩 اجرا در System Tray و باز شدن پنجره با دوبار کلیک روی آیکون
+- 🎨 رابط کاربری به سبک ویندوز ۱۱ که با تم و رنگ تاکید (Accent) سیستم هماهنگ می‌شود
+- 📦 نصب‌کننده کامل با میان‌بر Start و ثبت در Settings → Apps
+- 🗑️ حذف‌کننده تمیز که همه‌چیز را پاک می‌کند
+- 🔒 بدون نیاز به دسترسی ادمین، بدون اتصال به اینترنت و بدون ارسال هیچ داده‌ای
+- 🖥️ پشتیبانی از نمایشگرهای High-DPI
+
+## 🎯 بخش‌های برنامه
+
+برنامه شامل بخش‌های زیر است:
+
+- پنجره تنظیمات
+  - انتخاب ساعت شروع حالت روشن
+  - انتخاب ساعت شروع حالت تاریک
+  - روشن و خاموش کردن تغییر خودکار
+  - اجرای خودکار همراه با ویندوز
+  - نمایش حالت فعلی ویندوز
+- منوی System Tray
+  - باز کردن تنظیمات
+  - خروج کامل از برنامه
+- نصب‌کننده و حذف‌کننده
+  - نصب بدون دسترسی ادمین
+  - میان‌بر منوی Start و دسکتاپ
+  - به‌روزرسانی روی نسخه قبلی با حفظ تنظیمات
+
+<img
+  src="./docs/screenshot.png"
+  alt="پیش‌نمایش برنامه Auto Theme Switcher"
+  width="420"
+/>
+
+## 🛠️ تکنولوژی‌های استفاده‌شده
+
+- C# (سازگار با C# 5)
+- .NET Framework 4 و Windows Forms
+- GDI+ (رسم کنترل‌های سفارشی)
+- Windows Registry
+- Win32 API (پیام WM_SETTINGCHANGE و DWM)
+- Windows Script Host (ساخت میان‌بر)
+- Batch Script
+
+## ⚙️ نحوه عملکرد
+
+- ویندوز تم را در دو مقدار رجیستری `AppsUseLightTheme` و `SystemUsesLightTheme` زیر مسیر `HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize` نگه می‌دارد (مقدار `1` یعنی روشن و `0` یعنی تاریک).
+- برنامه هر ۲۰ ثانیه ساعت را بررسی می‌کند. فقط وقتی حالت مطلوب عوض شود، هر دو مقدار را می‌نویسد و پیام `WM_SETTINGCHANGE` را پخش می‌کند تا برنامه‌های باز هم فوراً تغییر کنند.
+- تنظیمات برنامه در `HKCU\Software\AutoThemeSwitcher` ذخیره می‌شود و اجرای خودکار با یک ورودی استاندارد `HKCU\...\Run` انجام می‌شود.
+- همه‌چیز مخصوص کاربر فعلی است و چیزی در سطح کل سیستم تغییر نمی‌کند.
+
+## 🎨 طراحی رابط کاربری
+
+رابط کاربری با الهام از اصول Fluent Design ویندوز ۱۱ طراحی شده است و تمرکز اصلی روی موارد زیر بوده است:
+
+- کارت‌های ساده با گوشه‌های گرد و خط جداکننده، مشابه صفحه تنظیمات ویندوز
+- کلیدهای روشن/خاموش (Toggle Switch) به‌جای چک‌باکس
+- انتخاب‌گر ساعت اختصاصی با امکان تایپ مستقیم، فلش‌ها و چرخ ماوس
+- هماهنگی کامل با تم روشن/تاریک و رنگ تاکید سیستم؛ ظاهر خود برنامه هم همزمان با تغییر تم عوض می‌شود
+- هماهنگ‌سازی نوار عنوان پنجره با تم
+- رسم واضح و شارپ روی نمایشگرهای High-DPI
+- فضای کافی، فاصله‌گذاری منظم و متن خوانا
+- پشتیبانی از کیبورد (Tab، Space، فلش‌ها)
+
+## 📂 ساختار پروژه
+
+```text
+auto-theme-switcher/
+│
+├── AutoThemeSwitcher.cs   # خود برنامه: Tray، زمان‌بند و پنجره تنظیمات
+├── Fluent.cs              # کنترل‌ها و رنگ‌های سبک ویندوز ۱۱
+├── Setup.cs               # نصب‌کننده و حذف‌کننده
+├── app.ico                # آیکون برنامه
+├── build.bat              # ساخت برنامه و نصب‌کننده
+├── docs/
+│   └── screenshot.png
+└── README.md
+```
+
+## 🚀 اجرای پروژه
+
+ابتدا Repository را Clone کنید:
+
+```bash
+git clone https://github.com/your-username/auto-theme-switcher.git
+```
+
+و وارد پوشه پروژه شوید:
+
+```bash
+cd auto-theme-switcher
+```
+
+سپس روی فایل `build.bat` دوبار کلیک کنید. بعد از چند ثانیه فایل `AutoThemeSwitcher_Setup.exe` ساخته می‌شود و پنجره نصب خودکار باز می‌شود.
+
+برای ساخت برنامه به Visual Studio یا .NET SDK نیازی نیست، چون از کامپایلر C# که همراه خود ویندوز است استفاده می‌شود. فقط ویندوز ۱۰ یا ۱۱ لازم است.
+
+> فایل نصب ساخته‌شده امضای دیجیتال ندارد. اگر آن را برای کس دیگری بفرستید ممکن است ویندوز با SmartScreen هشدار بدهد؛ فایلی که خودتان روی همان سیستم می‌سازید معمولاً این هشدار را نمی‌گیرد.
+
+## 🗑️ حذف برنامه
+
+از مسیر **Settings → Apps → Auto Theme Switcher → Uninstall** استفاده کنید، یا فایل `Uninstall.exe` را از پوشه نصب (`%LocalAppData%\Programs\AutoThemeSwitcher`) اجرا کنید. برنامه، میان‌برها، ورودی اجرای خودکار و تنظیمات ذخیره‌شده پاک می‌شوند و تم ویندوز همان‌طور که آخرین بار تنظیم شده بود می‌ماند.
+
+## ❓ سؤال‌های رایج
+
+**بعضی برنامه‌ها تمشان عوض نشد؟**
+تعداد کمی از برنامه‌ها تم را فقط موقع اجرا می‌خوانند. آن‌ها را ببندید و دوباره باز کنید.
+
+**برنامه با ویندوز اجرا نمی‌شود؟**
+مطمئن شوید گزینه **Start with Windows** روشن است و در Task Manager بخش Startup apps بررسی کنید که ویندوز آن را غیرفعال نکرده باشد.
+
+**آیکون برنامه را نمی‌بینم؟**
+روی فلش ^ کنار ساعت کلیک کنید. می‌توانید آیکون را بیرون بکشید تا همیشه دیده شود.
+
+## 🔮 قابلیت‌های آینده
+
+در نسخه‌های بعدی می‌توان امکانات زیر را اضافه کرد:
+
+- تغییر تم بر اساس طلوع و غروب خورشید
+- والپیپر جدا برای حالت روشن و تاریک
+- گزینه «توقف تا فردا» در منوی Tray
+- پشتیبانی از زبان فارسی در خود برنامه و انتخاب زبان
+- انتشار فایل نصب آماده در بخش Releases
+- امضای دیجیتال نصب‌کننده
+
+## 🎯 هدف پروژه
+
+این پروژه با هدف ساخت یک ابزار کوچک و واقعاً کاربردی ایجاد شده است و در عین حال نمونه‌ای از **توسعه برنامه دسکتاپ ویندوز، طراحی رابط کاربری به سبک Fluent، کار با Win32 API و رجیستری، و ساخت نصب‌کننده سفارشی** است.
+
+Auto Theme Switcher نشان می‌دهد که می‌شود یک مشکل روزمره را با ابزاری ساده، سبک و بدون وابستگی حل کرد.
+
+## 📄 مجوز
+
+این پروژه تحت مجوز MIT منتشر شده است. هر کاری خواستید با آن بکنید.
+
+
+---
+
+<a name="en"></a>
+
+# Auto Theme Switcher | English
+
+[فارسی](#fa) | English
+
+Auto Theme Switcher is a small, lightweight Windows app that automatically switches the system theme between **Light** and **Dark** mode at the times you choose. It runs in the system tray, starts with Windows, and otherwise stays out of your way.
+
+## 📌 About the Project
+
+Windows has no built-in way to schedule Light and Dark mode, and many of the apps that do are bigger than the average user needs or come with features nobody asked for.
+
+Auto Theme Switcher is built around one simple idea: pick two times, save, and never touch it again. Windows goes dark in the evening and light in the morning, on its own.
+
+## ✨ Features
+
+- 🌗 Automatically switches Windows and apps between Light and Dark mode based on the time
+- 🌙 Supports ranges that cross midnight (for example, Light from 22:00 to 06:00)
+- 🚀 Starts automatically with Windows
+- 🔄 Applies the right theme at startup, even if your PC was off at switch time
+- ✋ Respects manual changes: if you change the theme yourself, it leaves it alone until the next scheduled time
+- 🧩 Runs in the system tray; double-click the icon to open the settings
+- 🎨 Windows 11-style interface that follows the system theme and accent color
+- 📦 Full installer with a Start menu shortcut and an entry in Settings → Apps
+- 🗑️ Clean uninstaller that removes everything
+- 🔒 No admin rights, no internet access, no data sent anywhere
+- 🖥️ High-DPI display support
+
+## 🎯 App Components
+
+The app consists of the following parts:
+
+- Settings window
+  - Choose when Light mode starts
+  - Choose when Dark mode starts
+  - Turn automatic switching on or off
+  - Start with Windows
+  - Shows the current Windows mode
+- System tray menu
+  - Open settings
+  - Exit completely
+- Installer and uninstaller
+  - Installs without admin rights
+  - Start menu and desktop shortcuts
+  - Updates over a previous version and keeps your settings
+
+<img
+  src="./docs/screenshot.png"
+  alt="Auto Theme Switcher preview"
+  width="420"
+/>
+
+## 🛠️ Tech Stack
+
+- C# (C# 5 compatible)
+- .NET Framework 4 and Windows Forms
+- GDI+ (custom-drawn controls)
+- Windows Registry
+- Win32 API (WM_SETTINGCHANGE message and DWM)
+- Windows Script Host (shortcut creation)
+- Batch script
+
+## ⚙️ How It Works
+
+- Windows stores the theme in two registry values, `AppsUseLightTheme` and `SystemUsesLightTheme`, under `HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize` (`1` = light, `0` = dark).
+- The app checks the clock every 20 seconds. Only when the target mode changes does it write both values and broadcast a `WM_SETTINGCHANGE` message so open apps update immediately.
+- App settings are stored in `HKCU\Software\AutoThemeSwitcher`, and autostart is a standard `HKCU\...\Run` entry.
+- Everything is per-user; nothing system-wide is changed.
+
+## 🎨 UI Design
+
+The interface is inspired by the Fluent Design principles of Windows 11, with a focus on:
+
+- Simple rounded cards with dividers, similar to the Windows Settings page
+- Toggle switches instead of checkboxes
+- A custom time picker that supports direct typing, arrow buttons and the mouse wheel
+- Full theme awareness: it follows Light/Dark mode and the system accent color, and the app's own look changes together with the theme
+- Title bar that matches the theme
+- Sharp rendering on High-DPI displays
+- Generous spacing and readable text
+- Keyboard support (Tab, Space, arrow keys)
+
+## 📂 Project Structure
+
+```text
+auto-theme-switcher/
+│
+├── AutoThemeSwitcher.cs   # The app: tray icon, scheduler, settings window
+├── Fluent.cs              # Windows 11-style controls and colors
+├── Setup.cs               # Installer and uninstaller
+├── app.ico                # App icon
+├── build.bat              # Builds the app and the installer
+├── docs/
+│   └── screenshot.png
+└── README.md
+```
+
+## 🚀 Getting Started
+
+First, clone the repository:
+
+```bash
+git clone https://github.com/your-username/auto-theme-switcher.git
+```
+
+and go into the project folder:
+
+```bash
+cd auto-theme-switcher
+```
+
+Then double-click `build.bat`. After a few seconds, `AutoThemeSwitcher_Setup.exe` is created and the installer opens automatically.
+
+You don't need Visual Studio or the .NET SDK to build it, because it uses the C# compiler that ships with Windows. All you need is Windows 10 or 11.
+
+> The built installer isn't code-signed. If you send it to someone else, Windows may show a SmartScreen warning; a file you build yourself on the same machine normally doesn't trigger it.
+
+## 🗑️ Uninstall
+
+Go to **Settings → Apps → Auto Theme Switcher → Uninstall**, or run `Uninstall.exe` from the install folder (`%LocalAppData%\Programs\AutoThemeSwitcher`). The app, shortcuts, autostart entry and saved settings are removed, and your Windows theme stays however it was last set.
+
+## ❓ FAQ
+
+**Some apps didn't change theme?**
+A few apps only read the theme when they start. Close and reopen them.
+
+**It doesn't start with Windows?**
+Make sure **Start with Windows** is on, and check Task Manager → Startup apps in case Windows disabled it.
+
+**I can't see the tray icon?**
+Click the ^ arrow next to the clock. You can drag the icon out to keep it visible.
+
+## 🔮 Future Plans
+
+Possible additions in future versions:
+
+- Sunrise and sunset based switching
+- Separate wallpapers for Light and Dark mode
+- A "pause until tomorrow" option in the tray menu
+- Persian language support inside the app, with a language switch
+- Publishing a ready-made installer in Releases
+- Code-signing the installer
+
+## 🎯 Project Goal
+
+This project was created to build a small tool that is genuinely useful, and at the same time to serve as an example of **Windows desktop app development, Fluent-style UI design, working with the Win32 API and the registry, and building a custom installer**.
+
+Auto Theme Switcher shows that an everyday annoyance can be solved with a simple, lightweight tool that has no dependencies.
+
+## 📄 License
+
+This project is released under the MIT license. Do whatever you like with it.
