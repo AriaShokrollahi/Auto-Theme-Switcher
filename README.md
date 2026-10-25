@@ -14,7 +14,7 @@ Auto Theme Switcher با یک ایده ساده ساخته شده است: دو �
 
 ## 🖥️ Preview
 
-![Auto Theme Switcher](./img/https://github.com/AriaShokrollahi/Auto-Theme-Switcher/blob/main/img/Designer%20(3).png)
+![Auto Theme Switcher](https://github.com/AriaShokrollahi/Auto-Theme-Switcher/blob/main/img/Designer%20(3).png)
 
 
 ## ✨ امکانات
