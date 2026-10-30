@@ -48,9 +48,8 @@ Auto Theme Switcher با یک ایده ساده ساخته شده است: دو �
   - به‌روزرسانی روی نسخه قبلی با حفظ تنظیمات
 
 <img
-  src="./docs/screenshot.png"
+  src="https://github.com/AriaShokrollahi/Auto-Theme-Switcher/blob/main/img/Auto%20Theme%20Switcher_%20Day%20and%20Night%20Windows.png"
   alt="پیش‌نمایش برنامه Auto Theme Switcher"
-  width="420"
 />
 
 ## 🛠️ تکنولوژی‌های استفاده‌شده
@@ -220,9 +219,8 @@ The app consists of the following parts:
   - Updates over a previous version and keeps your settings
 
 <img
-  src="./docs/screenshot.png"
+  src="https://github.com/AriaShokrollahi/Auto-Theme-Switcher/blob/main/img/Auto%20Theme%20Switcher_%20Night%20to%20Day.png"
   alt="Auto Theme Switcher preview"
-  width="420"
 />
 
 ## 🛠️ Tech Stack
