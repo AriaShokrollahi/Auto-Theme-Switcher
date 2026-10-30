@@ -9,6 +9,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -16,13 +17,14 @@ using Microsoft.Win32;
 static class Fluent
 {
     public static bool Dark;
-    public static Color Window, Card, CardBorder, Divider, Text, TextSecondary;
+    public static Color Window, Card, CardBorder, Divider, Text, TextSecondary, Subtle;
     public static Color Accent, AccentHover, AccentPressed, AccentText;
     public static Color Fill, FillHover, FillPressed, FillBorder, ToggleBorder, ToggleKnob;
 
     public static float Scale = 1f;
 
     public static readonly Font BodyFont = new Font("Segoe UI", 10f);
+    public static readonly Font SemiFont = new Font("Segoe UI Semibold", 10f);
     public static readonly Font SmallFont = new Font("Segoe UI", 9f);
     public static readonly Font TitleFont = new Font("Segoe UI Semibold", 18f);
 
@@ -75,8 +77,10 @@ static class Fluent
 
     static double Luma(Color c) { return 0.299 * c.R + 0.587 * c.G + 0.114 * c.B; }
 
-    static Color Blend(Color a, Color b, float t)
+    public static Color Mix(Color a, Color b, float t)
     {
+        if (t < 0f) t = 0f;
+        if (t > 1f) t = 1f;
         return Color.FromArgb(255,
             (int)(a.R + (b.R - a.R) * t),
             (int)(a.G + (b.G - a.G) * t),
@@ -97,6 +101,7 @@ static class Fluent
             Divider = Color.FromArgb(235, 235, 235);
             Text = Color.FromArgb(26, 26, 26);
             TextSecondary = Color.FromArgb(96, 96, 96);
+            Subtle = Color.FromArgb(230, 230, 230);
             Fill = Color.FromArgb(251, 251, 251);
             FillHover = Color.FromArgb(246, 246, 246);
             FillPressed = Color.FromArgb(240, 240, 240);
@@ -104,8 +109,8 @@ static class Fluent
             ToggleBorder = Color.FromArgb(137, 137, 137);
             ToggleKnob = Color.FromArgb(95, 95, 95);
             Accent = acc;
-            AccentHover = Blend(acc, Color.Black, 0.12f);
-            AccentPressed = Blend(acc, Color.Black, 0.22f);
+            AccentHover = Mix(acc, Color.Black, 0.12f);
+            AccentPressed = Mix(acc, Color.Black, 0.22f);
         }
         else
         {
@@ -115,15 +120,16 @@ static class Fluent
             Divider = Color.FromArgb(56, 56, 56);
             Text = Color.White;
             TextSecondary = Color.FromArgb(197, 197, 197);
+            Subtle = Color.FromArgb(54, 54, 54);
             Fill = Color.FromArgb(50, 50, 50);
             FillHover = Color.FromArgb(58, 58, 58);
             FillPressed = Color.FromArgb(44, 44, 44);
             FillBorder = Color.FromArgb(69, 69, 69);
             ToggleBorder = Color.FromArgb(160, 160, 160);
             ToggleKnob = Color.FromArgb(207, 207, 207);
-            Accent = Luma(acc) < 110 ? Blend(acc, Color.White, 0.35f) : acc;
-            AccentHover = Blend(Accent, Color.White, 0.12f);
-            AccentPressed = Blend(Accent, Color.White, 0.22f);
+            Accent = Luma(acc) < 110 ? Mix(acc, Color.White, 0.35f) : acc;
+            AccentHover = Mix(Accent, Color.White, 0.12f);
+            AccentPressed = Mix(Accent, Color.White, 0.22f);
         }
 
         AccentText = Luma(Accent) > 150 ? Color.Black : Color.White;
@@ -166,12 +172,39 @@ static class Fluent
         parent.Controls.Add(t);
         return t;
     }
+
+    // Loads an image file into a w x h thumbnail (cropped to fill). Returns null if it fails.
+    // The file is not kept open or locked.
+    public static Bitmap LoadThumb(string path, int w, int h)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return null;
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (Image src = Image.FromStream(fs, false, false))
+            {
+                Bitmap bmp = new Bitmap(w, h);
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g.SmoothingMode = SmoothingMode.HighQuality;
+                    g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    float s = Math.Max((float)w / src.Width, (float)h / src.Height);
+                    float sw = src.Width * s;
+                    float sh = src.Height * s;
+                    g.DrawImage(src, (w - sw) / 2f, (h - sh) / 2f, sw, sh);
+                }
+                return bmp;
+            }
+        }
+        catch (Exception) { return null; }
+    }
 }
 
 // Text label
 class FText : Control
 {
-    public bool Secondary, OnCard, Wrap;
+    public bool Secondary, OnCard, Wrap, AlignRight;
 
     public FText(Font font, bool secondary, bool onCard, bool wrap)
     {
@@ -196,7 +229,7 @@ class FText : Control
         using (StringFormat sf = new StringFormat())
         using (SolidBrush br = new SolidBrush(Secondary ? Fluent.TextSecondary : Fluent.Text))
         {
-            sf.Alignment = StringAlignment.Near;
+            sf.Alignment = AlignRight ? StringAlignment.Far : StringAlignment.Near;
             if (Wrap)
             {
                 sf.LineAlignment = StringAlignment.Near;
@@ -205,9 +238,27 @@ class FText : Control
             {
                 sf.LineAlignment = StringAlignment.Center;
                 sf.FormatFlags |= StringFormatFlags.NoWrap;
+                sf.Trimming = StringTrimming.EllipsisCharacter;
             }
             g.DrawString(Text, Font, br, new RectangleF(0, 0, Width, Height), sf);
         }
+    }
+}
+
+// Page container (paints the window background)
+class FPage : Control
+{
+    public FPage()
+    {
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
+                 ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        SetStyle(ControlStyles.Selectable, false);
+        TabStop = false;
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        e.Graphics.Clear(Fluent.Window);
     }
 }
 
@@ -247,17 +298,60 @@ class FCard : Control
     }
 }
 
-// On/Off toggle switch
-class FToggle : Control
+// Base for controls with a smooth hover animation
+abstract class FBase : Control
 {
-    bool isChecked, hover;
+    protected float HoverT;     // 0 = idle, 1 = hovered (animated)
+    protected bool Hover;
+    System.Windows.Forms.Timer anim;
+
+    protected FBase()
+    {
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
+                 ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+    }
+
+    void StartAnim()
+    {
+        if (anim == null)
+        {
+            anim = new System.Windows.Forms.Timer();
+            anim.Interval = 15;
+            anim.Tick += delegate { StepAnim(); };
+        }
+        anim.Start();
+    }
+
+    void StepAnim()
+    {
+        float target = Hover ? 1f : 0f;
+        float d = target - HoverT;
+        if (Math.Abs(d) < 0.03f) { HoverT = target; anim.Stop(); }
+        else HoverT += d * 0.35f;
+        Invalidate();
+    }
+
+    protected override void OnMouseEnter(EventArgs e) { base.OnMouseEnter(e); Hover = true; StartAnim(); }
+    protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); Hover = false; StartAnim(); }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && anim != null) { anim.Dispose(); anim = null; }
+        base.Dispose(disposing);
+    }
+}
+
+// On/Off toggle switch (the knob slides)
+class FToggle : FBase
+{
+    bool isChecked;
+    float pos;      // 0 = off, 1 = on (animated)
+    System.Windows.Forms.Timer slide;
     public bool Mirror = false;   // set to true for right-to-left layouts
     public event EventHandler CheckedChanged;
 
     public FToggle()
     {
-        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
-                 ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         Size = new Size(Fluent.S(44), Fluent.S(22));
         Cursor = Cursors.Hand;
         TabStop = true;
@@ -270,13 +364,31 @@ class FToggle : Control
         {
             if (isChecked == value) return;
             isChecked = value;
-            Invalidate();
+            StartSlide();
             if (CheckedChanged != null) CheckedChanged(this, EventArgs.Empty);
         }
     }
 
-    protected override void OnMouseEnter(EventArgs e) { base.OnMouseEnter(e); hover = true; Invalidate(); }
-    protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); hover = false; Invalidate(); }
+    void StartSlide()
+    {
+        if (slide == null)
+        {
+            slide = new System.Windows.Forms.Timer();
+            slide.Interval = 15;
+            slide.Tick += delegate { StepSlide(); };
+        }
+        slide.Start();
+    }
+
+    void StepSlide()
+    {
+        float target = isChecked ? 1f : 0f;
+        float d = target - pos;
+        if (Math.Abs(d) < 0.03f) { pos = target; slide.Stop(); }
+        else pos += d * 0.4f;
+        Invalidate();
+    }
+
     protected override void OnClick(EventArgs e) { base.OnClick(e); Checked = !Checked; }
     protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
     protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
@@ -288,7 +400,21 @@ class FToggle : Control
         if (e.KeyCode == Keys.Space) { Checked = !Checked; e.Handled = true; }
     }
 
-    Color Dim(Color c) { return Enabled ? c : Color.FromArgb(110, c); }
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && slide != null) { slide.Dispose(); slide = null; }
+        base.Dispose(disposing);
+    }
+
+    // color with alpha scaled by k (and dimmed when the control is disabled)
+    Color A(Color c, float k)
+    {
+        float f = k * (Enabled ? 1f : 0.43f);
+        int a = (int)(c.A * f);
+        if (a < 0) a = 0;
+        if (a > 255) a = 255;
+        return Color.FromArgb(a, c);
+    }
 
     protected override void OnPaint(PaintEventArgs e)
     {
@@ -299,28 +425,31 @@ class FToggle : Control
         RectangleF tr = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
         using (GraphicsPath p = Fluent.Round(tr, (Height - 1f) / 2f))
         {
-            if (isChecked)
+            if (pos > 0.01f)
             {
-                using (SolidBrush b = new SolidBrush(Dim(hover ? Fluent.AccentHover : Fluent.Accent)))
+                using (SolidBrush b = new SolidBrush(A(Fluent.Mix(Fluent.Accent, Fluent.AccentHover, HoverT), pos)))
                 {
                     g.FillPath(b, p);
                 }
             }
-            else
+            if (pos < 0.99f)
             {
-                using (Pen pen = new Pen(Dim(Fluent.ToggleBorder)))
+                using (Pen pen = new Pen(A(Fluent.ToggleBorder, 1f - pos)))
                 {
                     g.DrawPath(pen, p);
                 }
             }
         }
 
-        float d = hover ? Fluent.SF(14f) : Fluent.SF(12f);
+        float d = Fluent.SF(12f + 2f * HoverT);
         float margin = Fluent.SF(5f);
-        bool knobRight = Mirror ? !isChecked : isChecked;
-        float x = knobRight ? Width - margin - d : margin;
+        float xLeft = margin;
+        float xRight = Width - margin - d;
+        float xOn = Mirror ? xLeft : xRight;
+        float xOff = Mirror ? xRight : xLeft;
+        float x = xOff + (xOn - xOff) * pos;
         float y = (Height - d) / 2f;
-        using (SolidBrush kb = new SolidBrush(Dim(isChecked ? Fluent.AccentText : Fluent.ToggleKnob)))
+        using (SolidBrush kb = new SolidBrush(A(Fluent.Mix(Fluent.ToggleKnob, Fluent.AccentText, pos), 1f)))
         {
             g.FillEllipse(kb, x, y, d, d);
         }
@@ -337,16 +466,14 @@ class FToggle : Control
 }
 
 // Button (accent-colored primary, or plain)
-class FButton : Control
+class FButton : FBase
 {
     public bool Accent = true;
     public bool OnCard;
-    bool hover, down;
+    bool down;
 
     public FButton(string text)
     {
-        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
-                 ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         Font = Fluent.BodyFont;
         Text = text;
         Cursor = Cursors.Hand;
@@ -354,8 +481,7 @@ class FButton : Control
         Size = new Size(Fluent.S(120), Fluent.S(36));
     }
 
-    protected override void OnMouseEnter(EventArgs e) { base.OnMouseEnter(e); hover = true; Invalidate(); }
-    protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); hover = false; down = false; Invalidate(); }
+    protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); down = false; Invalidate(); }
     protected override void OnMouseUp(MouseEventArgs e) { base.OnMouseUp(e); down = false; Invalidate(); }
     protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
     protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
@@ -394,12 +520,12 @@ class FButton : Control
         }
         else if (Accent)
         {
-            fill = down ? Fluent.AccentPressed : (hover ? Fluent.AccentHover : Fluent.Accent);
+            fill = down ? Fluent.AccentPressed : Fluent.Mix(Fluent.Accent, Fluent.AccentHover, HoverT);
             textColor = Fluent.AccentText;
         }
         else
         {
-            fill = down ? Fluent.FillPressed : (hover ? Fluent.FillHover : Fluent.Fill);
+            fill = down ? Fluent.FillPressed : Fluent.Mix(Fluent.Fill, Fluent.FillHover, HoverT);
             textColor = Fluent.Text;
             border = true;
         }
@@ -432,6 +558,353 @@ class FButton : Control
             sf.Alignment = StringAlignment.Center;
             sf.LineAlignment = StringAlignment.Center;
             g.DrawString(Text, Font, tb, new RectangleF(0, 0, Width, Height), sf);
+        }
+    }
+}
+
+// Sidebar navigation item
+class FNavItem : FBase
+{
+    public bool Selected;
+
+    public FNavItem(string text)
+    {
+        Text = text;
+        Font = Fluent.BodyFont;
+        Cursor = Cursors.Hand;
+        TabStop = true;
+        Size = new Size(Fluent.S(176), Fluent.S(40));
+    }
+
+    protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
+    protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (e.KeyCode == Keys.Space || e.KeyCode == Keys.Enter)
+        {
+            OnClick(EventArgs.Empty);
+            e.Handled = true;
+        }
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        Graphics g = e.Graphics;
+        g.Clear(Fluent.Window);
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+        Color bg = Selected ? Fluent.Subtle : Fluent.Mix(Fluent.Window, Fluent.Subtle, HoverT * 0.6f);
+        using (GraphicsPath p = Fluent.Round(new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f), Fluent.SF(4f)))
+        using (SolidBrush b = new SolidBrush(bg))
+        {
+            g.FillPath(b, p);
+        }
+
+        if (Selected)
+        {
+            float pw = Fluent.SF(3f);
+            float ph = Fluent.SF(16f);
+            RectangleF pr = new RectangleF(Fluent.SF(4f), (Height - ph) / 2f, pw, ph);
+            using (GraphicsPath pp = Fluent.Round(pr, pw / 2f))
+            using (SolidBrush ab = new SolidBrush(Fluent.Accent))
+            {
+                g.FillPath(ab, pp);
+            }
+        }
+
+        if (Focused && ShowFocusCues)
+        {
+            using (GraphicsPath fp = Fluent.Round(new RectangleF(1f, 1f, Width - 2f, Height - 2f), Fluent.SF(4f)))
+            using (Pen fpen = new Pen(Fluent.Text, 1.5f))
+            {
+                g.DrawPath(fpen, fp);
+            }
+        }
+
+        using (StringFormat sf = new StringFormat())
+        using (SolidBrush tb = new SolidBrush(Fluent.Text))
+        {
+            sf.Alignment = StringAlignment.Near;
+            sf.LineAlignment = StringAlignment.Center;
+            sf.FormatFlags = StringFormatFlags.NoWrap;
+            g.DrawString(Text, Selected ? Fluent.SemiFont : Fluent.BodyFont, tb,
+                new RectangleF(Fluent.SF(16f), 0, Width - Fluent.SF(16f), Height), sf);
+        }
+    }
+}
+
+// Segmented control (one option selected at a time)
+class FSegmented : FBase
+{
+    string[] items;
+    int selected;
+    public event EventHandler SelectedChanged;
+
+    public FSegmented(string[] items)
+    {
+        this.items = items;
+        Font = Fluent.SmallFont;
+        Cursor = Cursors.Hand;
+        TabStop = true;
+        Size = new Size(Fluent.S(330), Fluent.S(36));
+    }
+
+    public int SelectedIndex
+    {
+        get { return selected; }
+        set
+        {
+            if (value < 0 || value >= items.Length || value == selected) return;
+            selected = value;
+            Invalidate();
+            if (SelectedChanged != null) SelectedChanged(this, EventArgs.Empty);
+        }
+    }
+
+    RectangleF SegRect(int i)
+    {
+        float pad = Fluent.SF(2f);
+        float gap = Fluent.SF(2f);
+        float w = (Width - 2f * pad - gap * (items.Length - 1)) / items.Length;
+        return new RectangleF(pad + i * (w + gap), pad, w, Height - 2f * pad);
+    }
+
+    protected override void OnMouseDown(MouseEventArgs e)
+    {
+        base.OnMouseDown(e);
+        for (int i = 0; i < items.Length; i++)
+        {
+            if (SegRect(i).Contains(e.X, e.Y))
+            {
+                SelectedIndex = i;
+                Focus();
+                break;
+            }
+        }
+    }
+
+    protected override bool IsInputKey(Keys keyData)
+    {
+        Keys k = keyData & Keys.KeyCode;
+        if (k == Keys.Left || k == Keys.Right) return true;
+        return base.IsInputKey(keyData);
+    }
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (e.KeyCode == Keys.Left) { SelectedIndex = selected - 1; e.Handled = true; }
+        else if (e.KeyCode == Keys.Right) { SelectedIndex = selected + 1; e.Handled = true; }
+    }
+
+    protected override void OnEnabledChanged(EventArgs e) { base.OnEnabledChanged(e); Invalidate(); }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        Graphics g = e.Graphics;
+        g.Clear(Fluent.Card);
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+        using (GraphicsPath cp = Fluent.Round(new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f), Fluent.SF(6f)))
+        using (SolidBrush cb = new SolidBrush(Fluent.Subtle))
+        {
+            g.FillPath(cb, cp);
+        }
+
+        using (StringFormat sf = new StringFormat())
+        {
+            sf.Alignment = StringAlignment.Center;
+            sf.LineAlignment = StringAlignment.Center;
+            sf.FormatFlags = StringFormatFlags.NoWrap;
+
+            for (int i = 0; i < items.Length; i++)
+            {
+                RectangleF r = SegRect(i);
+                bool on = i == selected;
+                if (on)
+                {
+                    using (GraphicsPath sp = Fluent.Round(r, Fluent.SF(4f)))
+                    using (SolidBrush sb = new SolidBrush(Fluent.Accent))
+                    {
+                        g.FillPath(sb, sp);
+                    }
+                }
+                using (SolidBrush tb = new SolidBrush(on ? Fluent.AccentText : Fluent.Text))
+                {
+                    g.DrawString(items[i], on ? Fluent.SemiFont : Font, tb, r, sf);
+                }
+            }
+        }
+
+        if (!Enabled)
+        {
+            using (SolidBrush ob = new SolidBrush(Color.FromArgb(150, Fluent.Card)))
+            {
+                g.FillRectangle(ob, 0, 0, Width, Height);
+            }
+        }
+    }
+}
+
+// Wallpaper tile: image preview, title, file name and a Browse button
+class FWallTile : Control
+{
+    public string Title, FileName;
+    public bool Active;
+    bool lightStyle;
+    Bitmap thumb;
+    FButton browseButton;
+    public event EventHandler Browse;
+
+    public FWallTile(string title, bool lightStyle)
+    {
+        SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
+                 ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
+        SetStyle(ControlStyles.Selectable, false);
+        TabStop = false;
+        Title = title;
+        this.lightStyle = lightStyle;
+
+        browseButton = new FButton("Browse");
+        browseButton.Accent = false;
+        browseButton.OnCard = true;
+        browseButton.Size = new Size(Fluent.S(84), Fluent.S(32));
+        browseButton.Click += delegate { RaiseBrowse(); };
+        Controls.Add(browseButton);
+
+        Size = new Size(Fluent.S(283), Fluent.S(188));
+    }
+
+    void RaiseBrowse()
+    {
+        if (Browse != null) Browse(this, EventArgs.Empty);
+    }
+
+    Rectangle PreviewRect
+    {
+        get { return new Rectangle(Fluent.S(10), Fluent.S(10), Width - 2 * Fluent.S(10), Fluent.S(120)); }
+    }
+
+    public void SetImage(string path)
+    {
+        if (thumb != null) { thumb.Dispose(); thumb = null; }
+        Rectangle pv = PreviewRect;
+        if (pv.Width > 0 && pv.Height > 0) thumb = Fluent.LoadThumb(path, pv.Width, pv.Height);
+        Invalidate();
+    }
+
+    protected override void OnResize(EventArgs e)
+    {
+        base.OnResize(e);
+        browseButton.Location = new Point(Width - Fluent.S(10) - browseButton.Width,
+                                          Height - Fluent.S(10) - browseButton.Height);
+    }
+
+    protected override void OnMouseDown(MouseEventArgs e)
+    {
+        base.OnMouseDown(e);
+        if (Enabled && PreviewRect.Contains(e.Location)) RaiseBrowse();
+    }
+
+    protected override void OnEnabledChanged(EventArgs e) { base.OnEnabledChanged(e); Invalidate(); }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && thumb != null) { thumb.Dispose(); thumb = null; }
+        base.Dispose(disposing);
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        Graphics g = e.Graphics;
+        g.Clear(Fluent.Window);
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+
+        RectangleF r = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
+        using (GraphicsPath p = Fluent.Round(r, Fluent.SF(8f)))
+        using (SolidBrush cb = new SolidBrush(Fluent.Card))
+        using (Pen bp = new Pen(Active ? Fluent.Accent : Fluent.CardBorder, Active ? Fluent.SF(2f) : 1f))
+        {
+            g.FillPath(cb, p);
+            g.DrawPath(bp, p);
+        }
+
+        Rectangle pv = PreviewRect;
+        using (GraphicsPath pp = Fluent.Round(new RectangleF(pv.X, pv.Y, pv.Width, pv.Height), Fluent.SF(6f)))
+        {
+            g.SetClip(pp);
+            if (thumb != null)
+            {
+                g.DrawImage(thumb, pv);
+            }
+            else
+            {
+                Color c1 = lightStyle ? Color.FromArgb(207, 227, 255) : Color.FromArgb(10, 15, 31);
+                Color c2 = lightStyle ? Color.FromArgb(243, 209, 255) : Color.FromArgb(74, 35, 128);
+                using (LinearGradientBrush lb = new LinearGradientBrush(pv, c1, c2, 45f))
+                {
+                    g.FillRectangle(lb, pv);
+                }
+                using (StringFormat cf = new StringFormat())
+                using (SolidBrush ph = new SolidBrush(lightStyle ? Color.FromArgb(50, 70, 110) : Color.FromArgb(215, 215, 230)))
+                {
+                    cf.Alignment = StringAlignment.Center;
+                    cf.LineAlignment = StringAlignment.Center;
+                    g.DrawString("No image selected", Fluent.SmallFont, ph,
+                        new RectangleF(pv.X, pv.Y, pv.Width, pv.Height - Fluent.S(10)), cf);
+                }
+            }
+            using (SolidBrush tb = new SolidBrush(Color.FromArgb(90, 0, 0, 0)))
+            {
+                g.FillRectangle(tb, pv.X, pv.Bottom - Fluent.S(10), pv.Width, Fluent.S(10));
+            }
+            g.ResetClip();
+        }
+
+        if (Active)
+        {
+            SizeF sz = g.MeasureString("In use now", Fluent.SmallFont);
+            RectangleF pr = new RectangleF(pv.X + Fluent.SF(8f), pv.Y + Fluent.SF(8f), sz.Width + Fluent.SF(6f), sz.Height + Fluent.SF(2f));
+            using (GraphicsPath pillPath = Fluent.Round(pr, pr.Height / 2f))
+            using (SolidBrush pb = new SolidBrush(Fluent.Accent))
+            using (SolidBrush pt = new SolidBrush(Fluent.AccentText))
+            using (StringFormat pf = new StringFormat())
+            {
+                pf.Alignment = StringAlignment.Center;
+                pf.LineAlignment = StringAlignment.Center;
+                pf.FormatFlags = StringFormatFlags.NoWrap;
+                g.FillPath(pb, pillPath);
+                g.DrawString("In use now", Fluent.SmallFont, pt, pr, pf);
+            }
+        }
+
+        float textW = Width - 2f * Fluent.SF(10f) - browseButton.Width - Fluent.SF(8f);
+        using (StringFormat tf = new StringFormat())
+        using (SolidBrush t1 = new SolidBrush(Fluent.Text))
+        using (SolidBrush t2 = new SolidBrush(Fluent.TextSecondary))
+        {
+            tf.Alignment = StringAlignment.Near;
+            tf.LineAlignment = StringAlignment.Center;
+            tf.FormatFlags = StringFormatFlags.NoWrap;
+            tf.Trimming = StringTrimming.EllipsisCharacter;
+            g.DrawString(Title, Fluent.SemiFont, t1,
+                new RectangleF(Fluent.SF(10f), pv.Bottom + Fluent.SF(8f), textW, Fluent.SF(20f)), tf);
+            g.DrawString(string.IsNullOrEmpty(FileName) ? "No image selected" : FileName, Fluent.SmallFont, t2,
+                new RectangleF(Fluent.SF(10f), pv.Bottom + Fluent.SF(28f), textW, Fluent.SF(18f)), tf);
+        }
+
+        if (!Enabled)
+        {
+            using (GraphicsPath op = Fluent.Round(r, Fluent.SF(8f)))
+            using (SolidBrush ob = new SolidBrush(Color.FromArgb(150, Fluent.Window)))
+            {
+                g.FillPath(ob, op);
+            }
         }
     }
 }

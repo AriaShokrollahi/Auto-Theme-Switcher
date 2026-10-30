@@ -36,7 +36,7 @@ static class SetupProgram
 static class Installer
 {
     public const string AppName = "Auto Theme Switcher";
-    public const string Version = "1.0";
+    public const string Version = "1.1";
     const string ProcessName = "AutoThemeSwitcher";
 
     const string UninstallRegKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\AutoThemeSwitcher";
@@ -47,6 +47,10 @@ static class Installer
     public static readonly string InstallDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         @"Programs\AutoThemeSwitcher");
+
+    static readonly string DataDir = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "AutoThemeSwitcher");
 
     public static string AppExe { get { return Path.Combine(InstallDir, "AutoThemeSwitcher.exe"); } }
     public static string UninstallExe { get { return Path.Combine(InstallDir, "Uninstall.exe"); } }
@@ -191,6 +195,8 @@ static class Installer
             catch (Exception) { Thread.Sleep(300); }
         }
 
+        CleanDataDir();
+
         MessageBox.Show(
             deleted ? AppName + " has been removed." : AppName + " was removed, but some files could not be deleted:\n" + InstallDir,
             AppName, MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1);
@@ -211,6 +217,35 @@ static class Installer
     // ---------------------------------------------------------------
     // ابزارهای کمکی
     // ---------------------------------------------------------------
+
+    // Removes the copied wallpaper images, but keeps the one Windows is currently showing
+    // so the desktop doesn't go blank after uninstalling.
+    static void CleanDataDir()
+    {
+        try
+        {
+            if (!Directory.Exists(DataDir)) return;
+
+            string current = "";
+            using (RegistryKey k = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop"))
+            {
+                if (k != null) current = (k.GetValue("WallPaper") as string) ?? "";
+            }
+
+            foreach (string f in Directory.GetFiles(DataDir, "*", SearchOption.AllDirectories))
+            {
+                if (!string.Equals(f, current, StringComparison.OrdinalIgnoreCase))
+                {
+                    try { File.Delete(f); } catch (Exception) { }
+                }
+            }
+
+            // remove the folders if they ended up empty
+            try { Directory.Delete(Path.Combine(DataDir, "Wallpapers"), false); } catch (Exception) { }
+            try { Directory.Delete(DataDir, false); } catch (Exception) { }
+        }
+        catch (Exception) { }
+    }
 
     static void KillApp()
     {
