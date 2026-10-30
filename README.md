@@ -49,11 +49,6 @@ Auto Theme Switcher با یک ایده ساده ساخته شده است: دو �
   - میان‌بر منوی Start و دسکتاپ
   - به‌روزرسانی روی نسخه قبلی با حفظ تنظیمات
 
-<img
-  src="./docs/screenshot.png"
-  alt="پیش‌نمایش برنامه Auto Theme Switcher"
-  width="420"
-/>
 
 ## 🛠️ تکنولوژی‌های استفاده‌شده
 
@@ -173,6 +168,11 @@ Windows has no built-in way to schedule Light and Dark mode, and many of the app
 
 Auto Theme Switcher is built around one simple idea: pick two times, save, and never touch it again. Windows goes dark in the evening and light in the morning, on its own.
 
+
+## 🖥️ Preview
+
+![Auto Theme Switcher](https://github.com/AriaShokrollahi/Auto-Theme-Switcher/blob/main/img/Designer%20(3).png)
+
 ## ✨ Features
 
 - 🌗 Automatically switches Windows and apps between Light and Dark mode based on the time
@@ -204,12 +204,6 @@ The app consists of the following parts:
   - Installs without admin rights
   - Start menu and desktop shortcuts
   - Updates over a previous version and keeps your settings
-
-<img
-  src="./docs/screenshot.png"
-  alt="Auto Theme Switcher preview"
-  width="420"
-/>
 
 ## 🛠️ Tech Stack
 
